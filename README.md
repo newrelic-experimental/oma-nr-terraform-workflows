@@ -24,7 +24,7 @@ Automated terraform worfklows allow you to plan and apply your terraform changes
 ## Workflow Examples
 
 - [Github Actions](github-action-example)
-- [Gitlab Pipline](gitlab-pipeline-example)
+- [Gitlab Pipeline](gitlab-pipeline-example)
 
 
 ## Support
