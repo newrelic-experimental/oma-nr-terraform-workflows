@@ -1,0 +1,43 @@
+name: "Terraform Apply"
+
+# Trigger when commits are pushed to the main branch
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  terraform-apply:
+    name: "Terraform Apply"
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the code
+      # Marketplace: https://github.com/marketplace/actions/checkout
+      - name: "Setup - Checkout"
+        uses: actions/checkout@v2.1.0
+
+      # Downloads a specific version of Terraform CLI and adds it to PATH
+      # Marketplace: https://github.com/marketplace/actions/hashicorp-setup-terraform
+      - name: "Setup - Terraform CLI"
+        uses: hashicorp/setup-terraform@v1
+
+      # Provides AWS credentials to Terraform
+      # By default, Terraform checks the home directory for a .aws folder with a credential file
+      # Documentation: https://docs.aws.amazon.com/ses/latest/DeveloperGuide/create-shared-credentials-file.html
+      - name: "Setup - Build AWS Credentials"
+        run: |
+          mkdir -p ~/.aws
+          echo "[default]" > ~/.aws/credentials
+          echo "aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+          echo "aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
+
+      # Init pulls credentials from the .aws/credentials file by default
+      - name: "Run - Terraform Init"
+        run: terraform init -input=false -parallelism=5
+
+      # Auto-approve prevents the requirement of human interaction
+      - name: "Run - Terraform Apply"
+        run: terraform apply -input=false -auto-approve
+        env:
+          NEW_RELIC_ACCOUNT_ID: ${{ secrets.NEW_RELIC_ACCOUNT_ID }}
+          NEW_RELIC_API_KEY: ${{ secrets.NEW_RELIC_API_KEY }}
