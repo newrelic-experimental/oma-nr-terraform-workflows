@@ -23,8 +23,9 @@ Automated terraform worfklows allow you to plan and apply your terraform changes
 
 ## Workflow Examples
 
-- [Github Actions](github-action-example)
-- [Gitlab Pipeline](gitlab-pipeline-example)
+- [Github Actions](github-action-example) - Using Github actions and S3 backed state storage.
+- [Gitlab Pipeline](gitlab-pipeline-example) - Using Gitlab pipeline with Gitlab http state storage
+- [Bitbucket Pipeline](bitbucket-pipeline-example) - Using Bitbucket pipelines with S3 backed state storage.
 
 
 ## Support

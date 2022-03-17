@@ -1,0 +1,36 @@
+image: hashicorp/terraform
+
+pipelines:
+  default:
+    - step:
+        name: Security Scan
+        script:
+          # Run a security scan for sensitive data.
+          # See more security tools at https://bitbucket.org/product/features/pipelines/integrations?&category=security
+          - pipe: atlassian/git-secrets-scan:0.5.1
+  pull-requests:
+      '**':
+        - step:
+            name: Terraform Plan
+            deployment: Production
+            script:
+              - terraform init
+              - terraform validate
+              - terraform plan
+  branches:
+    main: # assuming your main branch is called 'main' it might be 'master' or something else. Change it here!
+        - step:
+            name: Security Scan
+            script:
+              # Run a security scan for sensitive data.
+              # See more security tools at https://bitbucket.org/product/features/pipelines/integrations?&category=security
+              - pipe: atlassian/git-secrets-scan:0.5.1
+        - step:
+            name: Deploy to Production
+            deployment: Production
+            trigger: manual # remove this to auto-run apply on merge
+            script:
+              - terraform init
+              - terraform apply -auto-approve
+
+
