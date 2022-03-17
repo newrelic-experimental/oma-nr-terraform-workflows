@@ -9,23 +9,21 @@ These steps will help you setup a New Relic Terraform workflow on a new project.
 ### 1. Configure State
 In this example the terraform state file is stored in S3. You will need to create the S3 bucket and give permissions to an IAM role to write and read from the bucket.
 
-Copy `main.tf` from this folder into your Bitbucket repo. 
-
-In `main.tf` update the `backend` configuration block with your `bucket` name where indicated and set the `key` as your desired folder/filename for the state file. Set the `region` as required.
-
-Commit and push the repo. 
+- Copy `main.tf` from this folder into your Bitbucket repo. 
+- In `main.tf` update the `backend` configuration block with your `bucket` name where indicated and set the `key` as your desired folder/filename for the state file. Set the `region` as required.
+- Commit and push the repo. 
 
 > The main.tf includes a single new relic alert policy resource for testing.
 
-### 2. Create the Pipeline
+### 2. Create the Deployment Pipeline
+We need to setup a deployment pipeline to run terraform.
 
-In Bitbucket, navigate to `Repository Settigns -> Settings` section and enable pipelines.
-
-Navigate to `Deployments` section of BitBucket. Copy and paste the contents of `bitbucket-pipelines.yml` here and commit. 
+- In Bitbucket, navigate to `Repository Settings -> Settings` section and enable pipelines.
+- Navigate to `Deployments` section of BitBucket. Copy and paste the contents of `bitbucket-pipelines.yml` here and commit. 
+- Navigate to the `Pipelines` section and observe that the pipeline is running a security check.
 
 > Be sure to check the branch name is accurate in `bitbucket-pipelines.yml`, this guide assumes your main branch is called `main`, if not change accordingly.
 
-Navigate to the `Pipelines` section and observe that the pipeline is running a security check.
 
 ### 3. Configure the pipeline
 In order to make changes to New Relic the pipeline requires api keys and to store the state in AWS it needs access tokens. These are prodvided as deployment variables.
