@@ -1,4 +1,4 @@
-# New Relic TerraformConfiguration Drift Workflow
+# New Relic Terraform Configuration Drift Workflow
 This example demonstrates how a scheduled Github action may trigger a Terraform plan and report the data to New Relic where an alert could be setup to trigger a response. It also demonstrates how you might attempt auto-remediation.
 
 
