@@ -1,0 +1,99 @@
+name: "Scheduled Config Drift Check"
+on:
+  # workflow_dispatch:      #Enable this to allow you to run on-demand
+  schedule:
+    - cron:  '0 * * * *' # e.g. Every hour at the 0th minute
+
+jobs:
+  config_drift_check:
+    if: github.ref == 'refs/heads/main' #only run on main branch
+    runs-on: ubuntu-latest
+    # Set the working directory to main for the config files
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: "Setup - Checkout"
+        uses: actions/checkout@v2
+
+      # Downloads a specific version of Terraform CLI and adds it to PATH
+      # Marketplace: https://github.com/marketplace/actions/hashicorp-setup-terraform
+      - name: "Setup - Terraform CLI"
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_wrapper: false
+
+      # Provides AWS credentials to Terraform
+      # By default, Terraform checks the home directory for a .aws folder with a credential file
+      # Documentation: https://docs.aws.amazon.com/ses/latest/DeveloperGuide/create-shared-credentials-file.html
+      - name: "Setup - Build AWS Credentials"
+        run: |
+          mkdir -p ~/.aws
+          echo "[default]" > ~/.aws/credentials
+          echo "aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+          echo "aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
+
+      - name: "Run - Terraform Init"
+        run: terraform init
+
+      - name: "Run - Terraform Plan"
+        id: plan
+        run: terraform plan -no-color -out=plan.txt
+        env:
+          NEW_RELIC_ACCOUNT_ID: ${{ secrets.NEW_RELIC_ACCOUNT_ID }}
+          NEW_RELIC_API_KEY: ${{ secrets.NEW_RELIC_API_KEY }}
+    
+      - name: "Parse plan data and set output variables"
+        id: plandata      
+        run: |
+          # Strip the single quotes that are wrapping it so we can parse it with JQ
+          plan=$(terraform show -json plan.txt | sed "s/^'//g" | sed "s/'$//g")
+          # Get the count of the number of resources being created
+          created=$(echo "$plan" | jq -r ".resource_changes[].change.actions[]" | grep "create" | wc -l | sed 's/^[[:space:]]*//g') || created=0
+          # Get the count of the number of resources being updated
+          updated=$(echo "$plan" | jq -r ".resource_changes[].change.actions[]" | grep "update" | wc -l | sed 's/^[[:space:]]*//g') || updated=0
+          # Get the count of the number of resources being deleted
+          deleted=$(echo "$plan" | jq -r ".resource_changes[].change.actions[]" | grep "delete" | wc -l | sed 's/^[[:space:]]*//g') || deleted=0
+          # Set the output variables for resources being created, updated, deleted and their sum
+          echo "::set-output name=created::$created"
+          echo "::set-output name=updated::$updated"
+          echo "::set-output name=deleted::$deleted"
+          echo "::set-output name=sum::$(($created+$updated+$deleted))"
+          # Set the timestamp output variable
+          echo "::set-output name=time::$(date +%s)"
+          
+      # Find these events with `SELECT * from Metric where metricName='tf-drift-check'` 
+      - name: "Send metrics to New Relic One"
+        run: |
+          CODE=`curl --write-out '%{http_code}' \
+          --silent \
+          --output /dev/null \
+          -k -H "Content-Type: application/json" \
+          -H "Api-Key: ${{ secrets.NEW_RELIC_INGEST_API_KEY }}" \
+          -X POST -i https://metric-api.newrelic.com/metric/v1 \
+          -d '[{
+                  "metrics": [
+                    {
+                      "name": "tf-drift-check",
+                      "type": "gauge",
+                      "timestamp": ${{steps.plandata.outputs.time}},
+                      "value": ${{steps.plandata.outputs.sum}},
+                      "attributes": {"jobId": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", "created": ${{steps.plandata.outputs.created}} ,"updated" : ${{steps.plandata.outputs.updated}} , "destroyed" : ${{steps.plandata.outputs.deleted}}}
+                    }]
+                 }]'`
+            echo $CODE
+            if [ $CODE != "202" ] 
+            then
+              echo "Bad response from New Relic API, 202 expected: ${CODE}"
+              exit 1
+            fi
+
+
+      ## Enable the apply if you want to try auto-remediation
+
+      # - name: "Run - Terraform Apply"
+      #   run: terraform apply -parallelism=5 plan.txt 
+      #   env:
+      #     NEW_RELIC_ACCOUNT_ID: ${{ secrets.NEW_RELIC_ACCOUNT_ID }}
+      #     NEW_RELIC_API_KEY: ${{ secrets.NEW_RELIC_API_KEY }}

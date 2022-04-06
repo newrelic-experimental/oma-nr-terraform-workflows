@@ -21,12 +21,15 @@
 
 Automated terraform worfklows allow you to plan and apply your terraform changes automatically using version control systems. This repo contains a number of reference examples for different services.
 
-## Workflow Examples
+## Terraform Workflow Examples
 
 - [Github Actions](github-action-example) - Using Github actions and S3 backed state storage.
 - [Gitlab Pipeline](gitlab-pipeline-example) - Using Gitlab pipeline with Gitlab http state storage
 - [Bitbucket Pipeline](bitbucket-pipeline-example) - Using Bitbucket pipelines with S3 backed state storage.
 
+## Other Workflow Examples
+
+- [Terraform Configuration Drift](github-tf-config-drift) - Example of a scheduled workflow that notifies and remediates configuration drift.
 
 ## Support
 
