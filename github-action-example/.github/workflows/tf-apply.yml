@@ -21,19 +21,22 @@ jobs:
       - name: "Setup - Terraform CLI"
         uses: hashicorp/setup-terraform@v1
 
-      # Provides AWS credentials to Terraform
-      # By default, Terraform checks the home directory for a .aws folder with a credential file
-      # Documentation: https://docs.aws.amazon.com/ses/latest/DeveloperGuide/create-shared-credentials-file.html
-      - name: "Setup - Build AWS Credentials"
-        run: |
-          mkdir -p ~/.aws
-          echo "[default]" > ~/.aws/credentials
-          echo "aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
-          echo "aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
+      # # Provides AWS credentials to Terraform
+      # # By default, Terraform checks the home directory for a .aws folder with a credential file
+      # # Documentation: https://docs.aws.amazon.com/ses/latest/DeveloperGuide/create-shared-credentials-file.html
+      # - name: "Setup - Build AWS Credentials"
+      #   run: |
+      #     mkdir -p ~/.aws
+      #     echo "[default]" > ~/.aws/credentials
+      #     echo "aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+      #     echo "aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
 
       # Init pulls credentials from the .aws/credentials file by default
       - name: "Run - Terraform Init"
         run: terraform init -input=false -parallelism=5
+          env:
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       # Auto-approve prevents the requirement of human interaction
       - name: "Run - Terraform Apply"
@@ -41,3 +44,5 @@ jobs:
         env:
           NEW_RELIC_ACCOUNT_ID: ${{ secrets.NEW_RELIC_ACCOUNT_ID }}
           NEW_RELIC_API_KEY: ${{ secrets.NEW_RELIC_API_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
